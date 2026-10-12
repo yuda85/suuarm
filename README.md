@@ -30,6 +30,16 @@ UAV-007 link lost → approve UAV-031 → fleet at scale → Airspace Response �
 
 Press **?** for keyboard shortcuts.
 
+## Deploy (GitHub Pages)
+
+`.github/workflows/deploy-pages.yml` tests, builds with `--base-href /<repo>/` and publishes on every push to `main`.
+
+1. Repository **Settings → Pages → Source: GitHub Actions** (one time).
+2. Optional: add a `MAPTILER_KEY` repository secret. It is written to `config/runtime.json` at build time, so the key is
+   public on the site — restrict it to your Pages origin in the MapTiler dashboard. Without it the free fallback sources are used.
+
+Local check of the Pages build: `npm run build:pages` (base href `/suuarm/`).
+
 ## Architecture
 
 ```

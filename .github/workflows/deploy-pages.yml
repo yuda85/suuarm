@@ -1,0 +1,63 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npx ng test --watch=false
+
+      # Optional: MapTiler key from repository secret MAPTILER_KEY.
+      # Client-side keys are visible in the deployed site — restrict the key to your Pages origin in MapTiler.
+      - name: Runtime config
+        env:
+          MAPTILER_KEY: ${{ secrets.MAPTILER_KEY }}
+        run: |
+          if [ -n "$MAPTILER_KEY" ]; then
+            printf '{ "maptilerKey": "%s" }\n' "$MAPTILER_KEY" > public/config/runtime.json
+          fi
+
+      - name: Build
+        run: npx ng build --base-href "/${{ github.event.repository.name }}/"
+
+      - name: SPA fallback + no Jekyll
+        run: |
+          cp dist/suuarm-os/browser/index.html dist/suuarm-os/browser/404.html
+          touch dist/suuarm-os/browser/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/suuarm-os/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
