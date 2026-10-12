@@ -1,0 +1,160 @@
+@if (cur(); as c) {
+  @if (!ms.builderOpen()) {
+    <section class="mission" [attr.data-status]="c.mission.status">
+      <header>
+        <div>
+          <div class="caps kicker">{{ c.mission.code }} · {{ typeLabel(c.mission.intent.type) }} · {{ c.mission.intent.priority }}</div>
+          <h3>{{ c.mission.intent.name }}</h3>
+        </div>
+        <span class="status caps">{{ c.mission.status }}</span>
+      </header>
+
+      <div class="progress">
+        <span class="pct mono">{{ c.mission.progress * 100 | number: '1.0-0' }}<small>%</small></span>
+        <div class="bar" role="progressbar" [attr.aria-valuenow]="c.mission.progress * 100 | number: '1.0-0'" aria-valuemin="0" aria-valuemax="100">
+          @for (s of c.sectors; track s.id) {
+            <span class="seg" [attr.data-s]="s.state" [style.flex-grow]="s.total || 1">
+              <i [style.transform]="'scaleX(' + (s.total ? s.scanned / s.total : 0) + ')'"></i>
+            </span>
+          }
+        </div>
+      </div>
+
+      <ul class="sectors">
+        @for (s of c.sectors; track s.id) {
+          <li [attr.data-s]="s.state">
+            <span class="code mono">{{ s.code }}</span>
+            <span class="name">{{ s.name }}</span>
+            <span class="pctc mono">{{ (s.total ? (s.scanned / s.total) * 100 : 0) | number: '1.0-0' }}%</span>
+            <span class="st caps">{{ stateLabel(s.state) }}</span>
+          </li>
+        }
+      </ul>
+
+      <div class="assets">
+        <span class="caps lbl">Assets</span>
+        @for (a of assetRows(); track a.s) {
+          <span class="asset" [attr.data-s]="a.s"><b class="mono">{{ a.n }}</b> {{ a.s }}</span>
+        }
+      </div>
+
+      @if (planned()) {
+        <ol class="stages">
+          @for (st of stages; track st.id; let i = $index) {
+            <li [class.done]="i < stageIndex() || ms.stage() === 'idle'" [class.cur]="i === stageIndex() && ms.stage() !== 'ready'">
+              <ui-icon [icon]="icons.CircleCheck" [size]="14" />
+              <span>{{ st.label }}</span>
+              <em class="mono">{{ stageDetail()[st.id] }}</em>
+            </li>
+          }
+        </ol>
+        <div class="actions">
+          <button type="button" class="btn ghost" (click)="ms.discardPlan()">Discard</button>
+          <button type="button" class="btn primary" [disabled]="ms.stage() !== 'ready' && ms.stage() !== 'idle'" (click)="ms.start()">
+            <ui-icon [icon]="icons.Play" [size]="14" /> Start mission
+          </button>
+        </div>
+      } @else if (active()) {
+        <div class="actions">
+          <button type="button" class="btn ghost" (click)="focusArea()"><ui-icon [icon]="icons.Target" [size]="14" /> Zoom to mission</button>
+          <button type="button" class="btn danger" (click)="ms.abort()"><ui-icon [icon]="icons.Square" [size]="13" /> Abort</button>
+        </div>
+      } @else {
+        <div class="actions">
+          <button type="button" class="btn primary" (click)="newMission()">New mission</button>
+        </div>
+      }
+    </section>
+  }
+}
+
+@if (showBuilder()) {
+  <section class="builder">
+    <header>
+      <div>
+        <div class="caps kicker">Mission intent</div>
+        <h3>Define the outcome</h3>
+      </div>
+      @if (cur()) {
+        <button type="button" class="x" (click)="ms.builderOpen.set(false)" aria-label="Close builder"><ui-icon [icon]="icons.X" [size]="14" /></button>
+      }
+    </header>
+    <p class="hint">The operator defines intent. SuuarmOS selects assets, divides the work and generates routes.</p>
+
+    <div class="field">
+      <span class="lbl caps">Mission</span>
+      <div class="seg" role="radiogroup" aria-label="Mission type">
+        <button type="button" role="radio" [attr.aria-checked]="draft().type === 'AREA_SEARCH'" (click)="setType('AREA_SEARCH')">Area survey</button>
+        <button type="button" role="radio" [attr.aria-checked]="draft().type === 'BUILDING_SCAN'" (click)="setType('BUILDING_SCAN')">Building scan</button>
+      </div>
+    </div>
+
+    @if (draft().type === 'BUILDING_SCAN') {
+      <div class="field">
+        <span class="lbl caps">Target structure</span>
+        <div class="area">
+          <select [value]="draft().targetId ?? ''" (change)="ms.patch({ targetId: $any($event.target).value })" aria-label="Target building">
+            @for (b of ms.buildings(); track b.id) {
+              <option [value]="b.id">{{ b.id }} · {{ b.name }} · {{ b.top }} m</option>
+            }
+          </select>
+        </div>
+        <p class="hint small">Roof, four facades and surrounding area become scan sectors.</p>
+      </div>
+    } @else {
+    <div class="field">
+      <span class="lbl caps">Area</span>
+      <div class="area">
+        <select [value]="draft().areaId ?? ''" (change)="ms.patch({ areaId: $any($event.target).value })" aria-label="Mission area">
+          @for (p of ms.presets(); track p.id) {
+            <option [value]="p.id">{{ p.name }}</option>
+          }
+          @if (draft().drawn) {
+            <option value="DRAWN">Drawn polygon ({{ draft().drawn!.length }} pts)</option>
+          }
+        </select>
+        <button type="button" class="btn small" [class.on]="!!drawing()" (click)="drawArea()">
+          <ui-icon [icon]="icons.MapPin" [size]="13" /> {{ drawing() ? 'Drawing…' : 'Draw' }}
+        </button>
+      </div>
+      @if (drawing()) {
+        <p class="hint small">Click to add vertices · double-click or Enter to finish · Esc cancels</p>
+      }
+    </div>
+    }
+
+    <div class="field">
+      <span class="lbl caps">Priority</span>
+      <div class="seg" role="radiogroup" aria-label="Priority">
+        @for (p of priorities; track p) {
+          <button type="button" role="radio" [attr.aria-checked]="draft().priority === p" (click)="ms.patch({ priority: p })">{{ p }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl caps">Required sensors</span>
+      <div class="chips" role="group" aria-label="Required sensors">
+        @for (s of sensors; track s) {
+          <button type="button" class="chip" [attr.aria-pressed]="draft().sensors.includes(s)" (click)="toggleSensor(s)">{{ s }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl caps">Altitude</span>
+      <div class="alt">
+        <input type="range" min="35" max="120" step="5" [value]="draft().altitude" (input)="ms.patch({ altitude: +$any($event.target).value })" aria-label="Survey altitude" />
+        <span class="mono">{{ draft().altitude }} m AGL</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn ghost" (click)="focusArea()"><ui-icon [icon]="icons.Target" [size]="14" /> Show area</button>
+      <button type="button" class="btn primary" [disabled]="active()" (click)="ms.generate(); ms.builderOpen.set(false)">Generate plan</button>
+    </div>
+    @if (active()) {
+      <p class="hint small">A mission is executing. Abort it to plan a new one.</p>
+    }
+  </section>
+}

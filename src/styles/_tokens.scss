@@ -1,0 +1,109 @@
+// SuuarmOS design tokens. Semantic CSS custom properties; components never use raw hex.
+:root {
+  color-scheme: dark;
+
+  // Surfaces
+  --c-app: #07090d;
+  --c-graphite: #0c1016;
+  --c-panel: rgba(14, 19, 26, 0.94);
+  --c-panel-solid: #0e131a;
+  --c-raised: #161d27;
+  --c-raised-2: #1c2531;
+  --c-navy: #0b1626;
+  --c-scrim: rgba(4, 6, 9, 0.62);
+
+  // Lines
+  --c-line: #222c39;
+  --c-line-strong: #2f3b4b;
+  --c-line-soft: rgba(148, 166, 190, 0.1);
+
+  // Text
+  --c-text-1: #e8edf3;
+  --c-text-2: #a9b4c2;
+  --c-text-3: #7e8a9a;
+  --c-text-inv: #07090d;
+
+  // Accent (selection, focus, primary action only)
+  --c-accent: #3d8bff;
+  --c-accent-strong: #63a2ff;
+  --c-accent-soft: rgba(61, 139, 255, 0.14);
+  --c-accent-line: rgba(61, 139, 255, 0.45);
+
+  // Status
+  --s-ready: #86a9d3;
+  --s-active: #1fc8d8;
+  --s-hold: #a393ff;
+  --s-returning: #6fcfa8;
+  --s-warning: #f2a93b;
+  --s-critical: #f0524f;
+  --s-offline: #5d6673;
+  --s-info: #8fb4ff;
+
+  --s-ready-soft: rgba(134, 169, 211, 0.14);
+  --s-active-soft: rgba(31, 200, 216, 0.14);
+  --s-hold-soft: rgba(163, 147, 255, 0.14);
+  --s-returning-soft: rgba(111, 207, 168, 0.14);
+  --s-warning-soft: rgba(242, 169, 59, 0.15);
+  --s-critical-soft: rgba(240, 82, 79, 0.16);
+  --s-offline-soft: rgba(93, 102, 115, 0.2);
+
+  // Type
+  --f-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --t-micro: 0.6875rem; // 11px caps labels
+  --t-xs: 0.75rem; // 12
+  --t-sm: 0.8125rem; // 13
+  --t-md: 0.875rem; // 14
+  --t-lg: 1rem; // 16
+  --t-xl: 1.25rem; // 20
+  --t-2xl: 1.625rem; // 26
+  --track-caps: 0.07em;
+
+  // Space (4pt rhythm)
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+
+  // Shape
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
+
+  // Layout
+  --bar-h: 3rem;
+  --panel-l-w: 20rem;
+  --panel-r-w: 22.5rem;
+  --inset: 0.5rem;
+  --feed-h: 1.875rem;
+
+  // Motion
+  --m-fast: 120ms;
+  --m-base: 200ms;
+  --m-slow: 320ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  // Elevation (z)
+  --z-map: 0;
+  --z-chrome: 10;
+  --z-panel: 20;
+  --z-toolbar: 30;
+  --z-popover: 40;
+  --z-toast: 50;
+  --z-modal: 60;
+  --z-demo: 70;
+
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--c-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --m-fast: 0ms;
+    --m-base: 0ms;
+    --m-slow: 0ms;
+  }
+}
