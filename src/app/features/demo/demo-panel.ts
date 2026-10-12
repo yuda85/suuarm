@@ -6,6 +6,7 @@ import { SimHost } from '../../core/state/sim-host.service';
 import { MapService } from '../../map/map.service';
 import { AlertStore } from '../../core/state/alert.store';
 import { StoryService } from './story.service';
+import { AutopilotService } from '../autopilot/autopilot.service';
 import { Icon } from '../../shared/ui/icon';
 import { Presentation, X } from '../../shared/ui/icons';
 
@@ -81,6 +82,17 @@ import { Presentation, X } from '../../shared/ui/icons';
             <button type="button" [class.on]="store.clustering()" (click)="store.clustering.set(!store.clustering())">Clusters</button>
             <button type="button" [class.on]="store.trails()" (click)="store.trails.set(!store.trails())">Trails</button>
             <button type="button" (click)="map.zoomToFleet()">Zoom fleet</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <span class="lbl caps">Video</span>
+          <div class="row">
+            @if (autopilot.running()) {
+              <button type="button" class="on" (click)="autopilot.stop()">■ Stop autopilot</button>
+            } @else {
+              <button type="button" (click)="runAutopilot()">▶ Autopilot · 2:00 operator session</button>
+            }
           </div>
         </div>
 
@@ -291,6 +303,12 @@ export class DemoPanel {
   protected readonly map = inject(MapService);
   protected readonly alerts = inject(AlertStore);
   protected readonly story = inject(StoryService);
+  protected readonly autopilot = inject(AutopilotService);
+
+  protected runAutopilot(): void {
+    this.open.set(false);
+    void this.autopilot.run();
+  }
   protected readonly icons = { Presentation, X };
   protected readonly sizes = FLEET_SIZES;
   protected readonly speeds = [1, 2, 4, 8];

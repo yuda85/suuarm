@@ -7,7 +7,7 @@ import { AutopilotService } from './autopilot.service';
   selector: 'app-autopilot-overlay',
   imports: [Logo],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.on]': 'ap.running()' },
+  host: { '[class.on]': 'ap.running()', '(window:keydown.escape)': 'ap.running() && ap.stop()' },
   template: `
     @if (ap.cursor().visible) {
       <svg class="cursor" [class.down]="ap.cursor().down" [style.transform]="'translate(' + ap.cursor().x + 'px,' + ap.cursor().y + 'px)'" width="26" height="30" viewBox="0 0 26 30" aria-hidden="true">
@@ -15,17 +15,13 @@ import { AutopilotService } from './autopilot.service';
       </svg>
     }
     @if (ap.ripple(); as r) {
-      @for (k of [r.id]; track k) {
-        <span class="ripple" [style.left.px]="r.x" [style.top.px]="r.y"></span>
-      }
+      <span class="ripple" [style.left.px]="r.x" [style.top.px]="r.y"></span>
     }
     @if (ap.caption(); as c) {
-      @for (k of [c.text]; track k) {
-        <div class="caption">
-          <span class="kicker caps">{{ c.kicker }}</span>
-          <span class="text">{{ c.text }}</span>
-        </div>
-      }
+      <div class="caption">
+        <span class="kicker caps">{{ c.kicker }}</span>
+        <span class="text">{{ c.text }}</span>
+      </div>
     }
     @if (ap.timelapse(); as t) {
       <div class="tl caps mono">▸▸ time-lapse ×{{ t }}</div>

@@ -30,6 +30,15 @@ UAV-007 link lost → approve UAV-031 → fleet at scale → Airspace Response �
 
 Press **?** for keyboard shortcuts.
 
+### Video autopilot
+
+Open the app with `?autoplay` (e.g. `http://localhost:4200/?autoplay`) or use **▶ Autopilot** in the presenter panel. A ~2:00
+scripted operator session plays: visible cursor and clicks on the real controls, lower-third captions, title and end cards.
+Same seed and inputs every take. **Esc** stops it.
+
+To record: Chrome at 1920×1080, fullscreen (F11), start a screen recorder (OBS, or Win + Alt + R with Xbox Game Bar), then load
+the `?autoplay` URL. Trim the first seconds of map load.
+
 ## Deploy (GitHub Pages)
 
 `.github/workflows/deploy-pages.yml` tests, builds with `--base-href /<repo>/` and publishes on every push to `main`.

@@ -39,11 +39,12 @@ export class AutopilotService {
   readonly timelapse = signal<number | null>(null);
   private cancelled = false;
   private rippleSeq = 0;
+  private captionSeq = 0;
 
   stop(): void {
     this.cancelled = true;
     this.running.set(false);
-    this.caption.set(null);
+    this.clearCaption();
     this.card.set(null);
     this.timelapse.set(null);
     this.cursor.set({ ...this.cursor(), visible: false });
@@ -57,8 +58,35 @@ export class AutopilotService {
     if (this.cancelled) throw new Error('autopilot-cancelled');
   }
 
+  /** Clear first, then set on the next task, so the caption re-mounts and its entry animation replays. */
   private say(kicker: string, text: string): void {
-    this.caption.set({ kicker, text });
+    const seq = ++this.captionSeq;
+    this.caption.set(null);
+    setTimeout(() => seq === this.captionSeq && this.caption.set({ kicker, text }), 30);
+  }
+
+  private clearCaption(): void {
+    this.captionSeq++;
+    this.caption.set(null);
+  }
+
+  /** Hand the camera back from FOLLOW / POV and wait for the release blend, so a following flyTo isn't overridden. */
+  private async releaseCamera(): Promise<void> {
+    // Keep the selection until the release ends so the controller pulls back from the aircraft.
+    this.ops.cameraMode.set('FREE_3D');
+    const t0 = performance.now();
+    await this.wait(60);
+    while (this.map.camera?.isDriving && performance.now() - t0 < 8000) await this.wait(80);
+    this.ops.select(null);
+  }
+
+  /** Clear the fleet search the way an operator would leave it after a drill-down. */
+  private clearSearch(): void {
+    const e = this.el('app-fleet-panel .search input') as HTMLInputElement | null;
+    if (!e || !e.value) return;
+    e.value = '';
+    e.dispatchEvent(new Event('input', { bubbles: true }));
+    e.blur();
   }
 
   private el(selector: string, text?: string): HTMLElement | null {
@@ -92,7 +120,10 @@ export class AutopilotService {
 
   private async moveToEl(selector: string, text?: string, dx = 0, dy = 0): Promise<HTMLElement | null> {
     const e = this.el(selector, text);
-    if (!e) return null;
+    if (!e) {
+      console.warn('[autopilot] target not found:', selector, text ?? '');
+      return null;
+    }
     const r = e.getBoundingClientRect();
     await this.moveTo(r.left + r.width / 2 + dx, r.top + r.height / 2 + dy);
     return e;
@@ -101,7 +132,9 @@ export class AutopilotService {
   private async press(): Promise<void> {
     const c = this.cursor();
     this.cursor.set({ ...c, down: true });
-    this.ripple.set({ x: c.x, y: c.y, id: ++this.rippleSeq });
+    this.ripple.set(null);
+    const id = ++this.rippleSeq;
+    setTimeout(() => this.rippleSeq === id && this.ripple.set({ x: c.x, y: c.y, id }), 16);
     await this.wait(140);
     this.cursor.set({ ...this.cursor(), down: false });
   }
@@ -176,7 +209,7 @@ export class AutopilotService {
       if ((e as Error).message !== 'autopilot-cancelled') console.error(e);
     } finally {
       this.running.set(false);
-      this.caption.set(null);
+      this.clearCaption();
       this.timelapse.set(null);
       this.cursor.set({ ...this.cursor(), visible: false });
       this.sim.speed.set(1);
@@ -281,9 +314,10 @@ export class AutopilotService {
       cam.follow.distance = 26;
       cam.follow.height = 9;
     }
-    await this.wait(2600);
-    this.ops.cameraMode.set('FREE_3D');
-    this.ops.select(null);
+    await this.wait(2200);
+    await this.releaseCamera();
+    this.clearSearch();
+    while (this.sensors.feeds().length) this.sensors.closeFeed(0);
     this.fly(CAMPUS, 16.7, 58, -40, 1800);
     await this.wait(2200);
 
@@ -310,8 +344,7 @@ export class AutopilotService {
     await this.wait(4200);
 
     // ── Scale
-    this.ops.cameraMode.set('FREE_3D');
-    this.ops.select(null);
+    await this.releaseCamera();
     this.say('Fleet at scale', 'Zoom out — clusters summarise state, exceptions stand out');
     await this.wait(900);
     this.fly([54.405, 24.47], 12.2, 45, -12, 3200);
@@ -344,7 +377,7 @@ export class AutopilotService {
     await this.wait(3200);
 
     // ── End card
-    this.caption.set(null);
+    this.clearCaption();
     this.card.set('end');
     await this.wait(5200);
     this.card.set(null);

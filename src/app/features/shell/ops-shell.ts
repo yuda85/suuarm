@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, isDevMode } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, isDevMode } from '@angular/core';
 import { SensorStore } from '../../core/state/sensor.store';
 import { EventFeedStore } from '../../core/state/event-feed.store';
 import { OpsStore } from '../../core/state/ops-store';
@@ -21,6 +21,8 @@ import { TrackPanel } from '../track/track-panel';
 import { ToolHint } from '../map-chrome/tool-hint';
 import { Shortcuts } from './shortcuts';
 import { StoryService } from '../demo/story.service';
+import { AutopilotOverlay } from '../autopilot/autopilot-overlay';
+import { AutopilotService } from '../autopilot/autopilot.service';
 import { RoleService } from '../../core/state/role.service';
 import { RecommendationCard } from '../alerts/recommendation-card';
 import { AlertCenter } from '../alerts/alert-center';
@@ -33,7 +35,7 @@ import { AlertStore } from '../../core/state/alert.store';
  */
 @Component({
   selector: 'app-ops-shell',
-  imports: [MapHost, CommandBar, FleetPanel, AssetPanel, SensorPanel, MapToolbar, MapFooter, EventStrip, Icon, PovHud, SensorFxDefs, ClusterCard, DemoPanel, RecommendationCard, AlertCenter, SystemHealthPopover, TrackPanel, ToolHint, Shortcuts],
+  imports: [MapHost, CommandBar, FleetPanel, AssetPanel, SensorPanel, MapToolbar, MapFooter, EventStrip, Icon, PovHud, SensorFxDefs, ClusterCard, DemoPanel, RecommendationCard, AlertCenter, SystemHealthPopover, TrackPanel, ToolHint, Shortcuts, AutopilotOverlay],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class.left-collapsed]': 'store.leftCollapsed()',
@@ -46,6 +48,7 @@ import { AlertStore } from '../../core/state/alert.store';
     <app-sensor-fx-defs />
     <app-command-bar />
     <app-shortcuts />
+    <app-autopilot-overlay />
     <main class="stage" id="ops-map" tabindex="-1" aria-label="Operations">
       <app-map-host />
       <div class="vignette" aria-hidden="true"></div>
@@ -365,13 +368,23 @@ export class OpsShell {
     (document.querySelector('.maplibregl-canvas') as HTMLElement | null)?.focus();
   }
 
+  private readonly autopilot = inject(AutopilotService);
+
   constructor() {
     inject(RoleService);
+    // ?autoplay → scripted 2-minute operator session (video capture), once the map is up.
+    if (new URLSearchParams(location.search).has('autoplay')) {
+      const stop = effect(() => {
+        if (!this.store.mapReady()) return;
+        stop.destroy();
+        setTimeout(() => void this.autopilot.run(), 2500);
+      });
+    }
     // Feed + alert stores must subscribe before the engine emits its first events.
     inject(EventFeedStore);
     inject(AlertStore);
     const sim = inject(SimHost);
     sim.start(sim.scenarioId(), sim.fleetSize());
-    if (isDevMode()) (globalThis as Record<string, unknown>)['__suuarm'] = { sim, store: this.store, sensors: this.sensors, story: inject(StoryService) };
+    if (isDevMode()) (globalThis as Record<string, unknown>)['__suuarm'] = { sim, store: this.store, sensors: this.sensors, story: inject(StoryService), autopilot: this.autopilot };
   }
 }
